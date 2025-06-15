@@ -1,38 +1,3 @@
-// import * as vscode from 'vscode';
-
-// export function activate(context: vscode.ExtensionContext) {
-//     let disposable = vscode.commands.registerCommand('mdhelper-id-placer.insertNext', async () => {
-//         vscode.window.showInformationMessage('Insert Next command executed!');
-//         const editor = vscode.window.activeTextEditor;
-//         if (!editor) {
-//             return;
-//         }
-
-//         const document = editor.document;
-//         const text = document.getText();
-//         const nextPattern = /@next\[(\d+)\]/;
-//         const match = text.match(nextPattern);
-
-//         if (match) {
-//             const nextNumber = parseInt(match[1], 10);
-//             const nextText = `@${nextNumber + 1} Your text here`; // Replace with actual text retrieval logic
-//             const newText = text.replace(nextPattern, `@next[${nextNumber + 1}]`);
-            
-//             const position = editor.selection.active;
-//             editor.edit(editBuilder => {
-//                 editBuilder.insert(position, nextText);
-//                 editBuilder.replace(new vscode.Range(0, 0, document.lineCount, 0), newText);
-//             });
-//         } else {
-//             vscode.window.showInformationMessage('No @next pattern found.');
-//         }
-//     });
-
-//     context.subscriptions.push(disposable);
-// }
-
-// export function deactivate() {}
-
 const vscode = require('vscode');
 
 function activate(context) {
@@ -44,33 +9,52 @@ function activate(context) {
     }
 
     const doc = editor.document;
-    const text = doc.getText();
-    const nextRegex = /@next\[(\d+)\]/;
-    const match = nextRegex.exec(text);
+    let found = false;
+    let tag = null;
+    let tagLine = null;
+    let prefix = null;
+    let numberStr = null;
 
-    if (!match) {
-      vscode.window.showErrorMessage('No @next[number] pattern found in document.');
-      return;
+    // Search the whole file for @next[<prefix><number>]
+    for (let line = 0; line < doc.lineCount; line++) {
+      const text = doc.lineAt(line).text;
+      const match = text.match(/@next\[([a-zA-Z_]+)(\d+)\]/);
+      if (match) {
+        prefix = match[1];
+        numberStr = match[2];
+        tag = `${prefix}${numberStr}`;
+        tagLine = line;
+        found = true;
+        break;
+      }
     }
 
-    const number = parseInt(match[1], 10);
-    const insertText = `@next[${number}]`;
+    if (found && tag) {
+      // Insert @<prefix><number> at cursor(s)
+      await editor.edit(editBuilder => {
+        for (const selection of editor.selections) {
+          editBuilder.insert(selection.active, `@${tag}`);
+        }
+      });
 
-    // Insert at cursor
-    await editor.edit(editBuilder => {
-      for (const selection of editor.selections) {
-        editBuilder.insert(selection.active, insertText);
-      }
-    });
+      // Increment the number in @next[...] on the found line, preserving leading zeros
+      const number = parseInt(numberStr, 10) + 1;
+      const paddedNumber = number.toString().padStart(numberStr.length, '0');
+      const newNextTag = `@next[${prefix}${paddedNumber}]`;
+      const lineText = doc.lineAt(tagLine).text;
+      const updatedLine = lineText.replace(/@next\[[a-zA-Z_]+\d+\]/, newNextTag);
 
-    // Replace first occurrence with incremented value
-    const incremented = `@next[${number + 1}]`;
-    const startPos = doc.positionAt(match.index);
-    const endPos = doc.positionAt(match.index + match[0].length);
+      const range = new vscode.Range(
+        new vscode.Position(tagLine, 0),
+        new vscode.Position(tagLine, lineText.length)
+      );
 
-    await editor.edit(editBuilder => {
-      editBuilder.replace(new vscode.Range(startPos, endPos), incremented);
-    });
+      await editor.edit(editBuilder => {
+        editBuilder.replace(range, updatedLine);
+      });
+    } else {
+      vscode.window.showErrorMessage('No @next[<prefix><number>] found in the file.');
+    }
   });
 
   context.subscriptions.push(disposable);
