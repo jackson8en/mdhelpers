@@ -1,0 +1,33 @@
+{
+  "name": "mdhelper-id-placer",
+  "displayName": "Next Inserter",
+  "description": "A VS Code extension to insert text based on @next pattern and increment the next number.",
+  "version": "0.1.0",
+  "publisher": "your-name",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "main": "./src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "mdhelper-id-placer.insertNext",
+        "title": "MDHelper Insert Next"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "mdhelper-id-placer.insertNext",
+        "key": "ctrl+n",
+        "when": "editorTextFocus"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+  }
+}
