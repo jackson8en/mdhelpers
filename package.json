@@ -8,6 +8,7 @@
     "vscode": "^1.60.0"
   },
   "main": "./src/extension.js",
+  "activationEvents": ["onStartupFinished"],
   "contributes": {
     "commands": [
       {
