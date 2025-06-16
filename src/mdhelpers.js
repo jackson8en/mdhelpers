@@ -115,7 +115,7 @@ let statusMenuDisposable = vscode.commands.registerCommand(
   'mdhelper-id-placer.statusBarMenu',
   async () => {
     const options = [
-      { label: 'Set workspace locator', action: 'setLocator' },
+      { label: 'Configure NextTag', action: 'configure' },
       { label: 'Insert Many', action: 'insertMany' },
       { label: 'Hello MKHelpers', action: 'hello' }
     ];
@@ -124,9 +124,10 @@ let statusMenuDisposable = vscode.commands.registerCommand(
     });
     if (!picked) return;
     switch (picked.action) {
-      case 'setLocator':
-        vscode.window.showInformationMessage('Set workspace locator selected');
-        // TODO: Implement your logic here
+      case 'configure':
+        const extension = require('./extension');
+        extension.activate({ subscriptions: [] });
+        vscode.commands.executeCommand('mdhelper-id-placer.configure');
         break;
       case 'insertMany':
         vscode.window.showInformationMessage('Insert Many selected');

@@ -14,6 +14,10 @@
       {
         "command": "mdhelper-id-placer.insertNext",
         "title": "MDHelper Insert Next"
+      },
+      {
+        "command": "mdhelper-id-placer.configure",
+        "title": "MDHelper Configure"
       }
     ],
     "keybindings": [
