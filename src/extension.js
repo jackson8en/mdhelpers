@@ -4,6 +4,7 @@ const mdh = require('./mdhelpers');
 let statusBarItem;
 
 function activate(context) {
+  mdh.createConfigFile();
   let disposable = vscode.commands.registerCommand(
     'mdhelper-id-placer.insertNext',
     mdh.insertNextTag
