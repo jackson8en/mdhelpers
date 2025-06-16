@@ -139,15 +139,54 @@ let statusMenuDisposable = vscode.commands.registerCommand(
   }
 );
 
+async function promptForPrefix() {
+  return await vscode.window.showInputBox({
+    prompt: 'Enter the prefix for @next[] tags',
+    value: 'id'
+  }) || 'id';
+}
+
+async function promptForNumberStr() {
+  return await vscode.window.showInputBox({
+    prompt: 'Enter the starting number (with leading zeros if desired)',
+    value: '001'
+  }) || '001';
+}
+
+async function promptForScope() {
+  return await vscode.window.showQuickPick(
+    ['workspace', 'file'],
+    {
+      placeHolder: 'Apply numbering to workspace or file?',
+      canPickMany: false
+    }
+  ) || 'workspace';
+}
+
+async function createInitialConfigInteractive(cPath) {
+  const prefix = await promptForPrefix();
+  const numberStr = await promptForNumberStr();
+  const scope = await promptForScope();
+
+  const initialConfig = {
+    nextTag: { prefix, numberStr },
+    scope
+  };
+  fs.writeFileSync(cPath, JSON.stringify(initialConfig, null, 2));
+  return initialConfig;
+}
+
+async function createInitialConfig(cPath) {
+  if (!fs.existsSync(cPath)) {
+    const initialConfig = await createInitialConfigInteractive(cPath);
+    configCache = initialConfig;
+    configPath = cPath;
+  }
+}
+
 module.exports = {
   insertNextTag,
   initStatusBarItem,
   createConfigFile,
   statusMenuDisposable
 };
-
-function createInitialConfig(cPath) {
-  const initialConfig = { nextTag: { prefix: 'id', numberStr: '001' } };
-  fs.writeFileSync(cPath, JSON.stringify(initialConfig, null, 2));
-  return initialConfig;
-}
