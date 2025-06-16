@@ -39,21 +39,11 @@ async function writeConfig(newConfig) {
 async function findNextTag() {
   const config = await readConfig();
   if (!config || !config.nextTag) return null;
-  // Assume config.nextTag is like { prefix: 'id', numberStr: '001' }
   return {
     tag: `${config.nextTag.prefix}${config.nextTag.numberStr}`,
     prefix: config.nextTag.prefix,
     numberStr: config.nextTag.numberStr
   };
-}
-
-/**
- * Increments the number in the @next[...] tag, preserving leading zeros.
- */
-function incrementNextTag(prefix, numberStr) {
-  const number = parseInt(numberStr, 10) + 1;
-  const paddedNumber = number.toString().padStart(numberStr.length, '0');
-  return `@next[${prefix}${paddedNumber}]`;
 }
 
 async function insertNextTag() {
@@ -93,23 +83,6 @@ function initStatusBarItem() {
   return sbi;
 }
 
-async function createConfigFile() {
-  const folders = vscode.workspace.workspaceFolders;
-  if (!folders || folders.length === 0) return;
-  const workspacePath = folders[0].uri.fsPath;
-  const vscodeDir = path.join(workspacePath, '.vscode');
-  const cPath = path.join(vscodeDir, 'mdhelper.json');
-
-  if (!fs.existsSync(vscodeDir)) {
-    fs.mkdirSync(vscodeDir);
-  }
-  if (!fs.existsSync(cPath)) {
-    const initialConfig = createInitialConfig(cPath);
-    configCache = initialConfig;
-    configPath = cPath;
-  }
-}
-
 // Register the status bar menu command
 let statusMenuDisposable = vscode.commands.registerCommand(
   'mdhelper-id-placer.statusBarMenu',
@@ -140,54 +113,15 @@ let statusMenuDisposable = vscode.commands.registerCommand(
   }
 );
 
-async function promptForPrefix() {
+async function promptForTagStyle() {
   return await vscode.window.showInputBox({
     prompt: 'Enter the prefix for @next[] tags',
     value: 'id'
   }) || 'id';
 }
 
-async function promptForNumberStr() {
-  return await vscode.window.showInputBox({
-    prompt: 'Enter the starting number (with leading zeros if desired)',
-    value: '001'
-  }) || '001';
-}
-
-async function promptForScope() {
-  return await vscode.window.showQuickPick(
-    ['workspace', 'file'],
-    {
-      placeHolder: 'Apply numbering to workspace or file?',
-      canPickMany: false
-    }
-  ) || 'workspace';
-}
-
-async function createInitialConfigInteractive(cPath) {
-  const prefix = await promptForPrefix();
-  const numberStr = await promptForNumberStr();
-  const scope = await promptForScope();
-
-  const initialConfig = {
-    nextTag: { prefix, numberStr },
-    scope
-  };
-  fs.writeFileSync(cPath, JSON.stringify(initialConfig, null, 2));
-  return initialConfig;
-}
-
-async function createInitialConfig(cPath) {
-  if (!fs.existsSync(cPath)) {
-    const initialConfig = await createInitialConfigInteractive(cPath);
-    configCache = initialConfig;
-    configPath = cPath;
-  }
-}
-
 module.exports = {
   insertNextTag,
   initStatusBarItem,
-  createConfigFile,
   statusMenuDisposable
 };
