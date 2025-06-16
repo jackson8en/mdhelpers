@@ -65,6 +65,44 @@ async function insertNextTag() {
   }
 }
 
+function initStatusBarItem() {
+  let sbi = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1000);
+  sbi.text = 'hello MKHelpers';
+  sbi.command = 'mdhelper-id-placer.statusBarMenu';
+  return sbi;
+}
+
+  // Register the status bar menu command
+  let statusMenuDisposable = vscode.commands.registerCommand(
+    'mdhelper-id-placer.statusBarMenu',
+    async () => {
+      const options = [
+        { label: 'Set workspace locator', action: 'setLocator' },
+        { label: 'Insert Many', action: 'insertMany' },
+        { label: 'Hello MKHelpers', action: 'hello' }
+      ];
+      const picked = await vscode.window.showQuickPick(options, {
+        placeHolder: 'Choose an action'
+      });
+      if (!picked) return;
+      switch (picked.action) {
+        case 'setLocator':
+          vscode.window.showInformationMessage('Set workspace locator selected');
+          // TODO: Implement your logic here
+          break;
+        case 'insertMany':
+          vscode.window.showInformationMessage('Insert Many selected');
+          // TODO: Implement your logic here
+          break;
+        case 'hello':
+          vscode.window.showInformationMessage('Hello MKHelpers!');
+          break;
+      }
+    }
+  );
+
 module.exports = {
-  insertNextTag
+  insertNextTag,
+  initStatusBarItem,
+  statusMenuDisposable
 };
