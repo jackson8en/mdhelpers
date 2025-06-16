@@ -29,7 +29,7 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "echo Not for javascript",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./"
   },
