@@ -1,7 +1,7 @@
 {
   "nextTag": {
-    "prefix": "id",
-    "numberStr": "005"
-  },
-  "scope": "workspace"
+    "prefix": "@id",
+    "numberStr": "001",
+    "context": "file"
+  }
 }

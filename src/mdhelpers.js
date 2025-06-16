@@ -5,6 +5,7 @@ const path = require('path');
 
 let configPath = null;
 let configCache = null;
+let configWatcher = null;
 
 async function getConfigPath() {
   if (configPath) return configPath;
@@ -13,6 +14,14 @@ async function getConfigPath() {
   const workspacePath = folders[0].uri.fsPath;
   const vscodeDir = path.join(workspacePath, '.vscode');
   configPath = path.join(vscodeDir, 'mdhelper.json');
+
+  // Add watcher to clear cache if config file changes
+  if (!configWatcher && fs.existsSync(configPath)) {
+    configWatcher = fs.watchFile(configPath, () => {
+      configCache = null;
+    });
+  }
+
   return configPath;
 }
 
@@ -20,9 +29,20 @@ async function readConfig() {
   if (configCache) return configCache;
   const cPath = await getConfigPath();
   if (!cPath || !fs.existsSync(cPath)) return null;
-  const raw = fs.readFileSync(cPath, 'utf8');
-  configCache = JSON.parse(raw);
-  return configCache;
+  let raw;
+  try {
+    raw = fs.readFileSync(cPath, 'utf8');
+  } catch (err) {
+    vscode.window.showErrorMessage(`Error reading config file: ${err.message}`);
+    return null;
+  }
+  try {
+    configCache = JSON.parse(raw);
+    return configCache;
+  } catch (err) {
+    vscode.window.showErrorMessage(`Invalid JSON in config file: ${err.message}`);
+    return null;
+  }
 }
 
 async function writeConfig(newConfig) {
@@ -46,7 +66,15 @@ async function findNextTag() {
   };
 }
 
-async function insertNextTag() {
+async function insertNextTag(context) {
+  // Check config
+  const config = await readConfig();
+  if (!config || !config.nextTag) {
+    // Open the status bar menu if config or nextTag is missing
+    await vscode.commands.executeCommand('mdhelper-id-placer.statusBarMenu');
+    return;
+  }
+
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
     vscode.window.showErrorMessage('No active editor!');
@@ -88,36 +116,54 @@ let statusMenuDisposable = vscode.commands.registerCommand(
   'mdhelper-id-placer.statusBarMenu',
   async () => {
     const options = [
-      { label: 'Configure NextTag', action: 'configure' },
-      { label: 'Insert Many', action: 'insertMany' },
-      { label: 'Hello MKHelpers', action: 'hello' }
+      { label: 'DO NOT USE Configure (UI)', action: 'configure' },
+      { label: 'Configure (Quick)', action: 'configureQuick' },
+      { label: 'View Shortcuts', action: 'viewShortcuts' },
     ];
     const picked = await vscode.window.showQuickPick(options, {
-      placeHolder: 'Choose an action'
+      placeHolder: 'MDHelper Actions'
     });
     if (!picked) return;
     switch (picked.action) {
       case 'configure':
-        const extension = require('./extension');
-        extension.activate({ subscriptions: [] });
-        vscode.commands.executeCommand('mdhelper-id-placer.configure');
+        // const extension = require('./extension');
+        // extension.activate({ subscriptions: [] });
+        // vscode.commands.executeCommand('mdhelper-id-placer.configure');
+        vscode.window.showInformationMessage('Configure (UI) selected');
         break;
-      case 'insertMany':
-        vscode.window.showInformationMessage('Insert Many selected');
+      case 'configureQuick':
+        vscode.window.showInformationMessage('Quick Configure selected');
+        await promptForQuickConfigure().then(async (tagStyle) => {
+          writeTagStyleToConfig(tagStyle);
+          vscode.window.showInformationMessage(`Quick Configure saved: ${tagStyle}`);
+        });
+        break;
+      case 'viewShortcuts':
+        vscode.window.showInformationMessage('View Shortcuts selected');
         // TODO: Implement your logic here
-        break;
-      case 'hello':
-        vscode.window.showInformationMessage('Hello MKHelpers!');
         break;
     }
   }
 );
 
-async function promptForTagStyle() {
+async function promptForQuickConfigure() {
   return await vscode.window.showInputBox({
-    prompt: 'Enter the prefix for @next[] tags',
-    value: 'id'
-  }) || 'id';
+    prompt: 'Enter Intial Tag',
+    value: '@id001'
+  }) || '@id001';
+}
+
+async function writeTagStyleToConfig(tagStyle) {
+  const config = await readConfig() || {};
+  // Updated regex to match any non-digit prefix and a number
+  const match = tagStyle.match(/^([^\d]+)(\d+)$/);
+  if (!match) {
+    vscode.window.showErrorMessage('Invalid tag format. Example: @id001 or @££@abc0001');
+    return;
+  }
+  const [, prefix, numberStr] = match;
+  config.nextTag = { prefix, numberStr, context: "file" };
+  await writeConfig(config);
 }
 
 module.exports = {

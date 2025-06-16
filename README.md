@@ -8,7 +8,7 @@ When writing requirements and mini project backlogs in markdown it can be useful
 NextTag adds a small amount of config and a single keyboard shortcut to insert the next id.
 
 Features:
-- Flexible 'tag' format.
-- Contexts: File or Workspace
-- Configured in .vscode/mdhelpers.json
-- Configure with pop-up command entry
+- [/] Flexible 'tag' format.
+- [/] Configured in .vscode/mdhelpers.json
+- [/] Quick configure with pop-up command entry
+- [ ] Contexts: File or Workspace
