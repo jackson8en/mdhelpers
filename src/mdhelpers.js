@@ -60,8 +60,9 @@ async function findNextTag() {
   const config = await readConfig();
   if (!config || !config.nextTag) return null;
   return {
-    tag: `${config.nextTag.prefix}${config.nextTag.numberStr}`,
+    tag: `${config.nextTag.numberStr}`,
     prefix: config.nextTag.prefix,
+    suffix: config.nextTag.suffix || '',
     numberStr: config.nextTag.numberStr
   };
 }
@@ -87,14 +88,14 @@ async function insertNextTag(context) {
     // Insert @<prefix><number> at cursor(s)
     await editor.edit(editBuilder => {
       for (const selection of editor.selections) {
-        editBuilder.insert(selection.active, `@${found.tag}`);
+        editBuilder.insert(selection.active, `${found.prefix}${found.tag}${found.suffix}`);
       }
     });
 
     // Increment the number and update config
     const number = parseInt(found.numberStr, 10) + 1;
     const paddedNumber = number.toString().padStart(found.numberStr.length, '0');
-    const newNextTag = { prefix: found.prefix, numberStr: paddedNumber };
+    const newNextTag = { prefix: found.prefix, numberStr: paddedNumber, suffix: found.suffix };
 
     const config = await readConfig();
     config.nextTag = newNextTag;
@@ -156,13 +157,13 @@ async function promptForQuickConfigure() {
 async function writeTagStyleToConfig(tagStyle) {
   const config = await readConfig() || {};
   // Updated regex to match any non-digit prefix and a number
-  const match = tagStyle.match(/^([^\d]+)(\d+)$/);
+  const match = tagStyle.match(/^([^\d]+)(\d+)([^\d]*)$/);
   if (!match) {
     vscode.window.showErrorMessage('Invalid tag format. Example: @id001 or @££@abc0001');
     return;
   }
-  const [, prefix, numberStr] = match;
-  config.nextTag = { prefix, numberStr, context: "file" };
+  const [, prefix, numberStr, suffix] = match;
+  config.nextTag = { prefix, numberStr, suffix, context: "file" };
   await writeConfig(config);
 }
 
